@@ -49,76 +49,8 @@
     <p>The logic responsible for conversion is in the <code>lisp.js</code>.Our goal is somehow get xss in the site</p>
     <h2>
     <a id="user-content-analysis" class="anchor" href="#analysis" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Analysis</h2>
-    <div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-s1">tokens</span> <span class="pl-c1">=</span> <span class="pl-kos">[</span><span class="pl-kos">]</span>
-    <span class="pl-k">const</span> <span class="pl-s1">state</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
-        <span class="pl-c1">buf</span>: <span class="pl-s">''</span><span class="pl-kos">,</span>
-        <span class="pl-c1">inString</span>: <span class="pl-c1">false</span><span class="pl-kos">,</span>
-        <span class="pl-c1">inEscape</span>: <span class="pl-c1">false</span><span class="pl-kos">,</span>
-    <span class="pl-kos">}</span>
-    <span class="pl-k">for</span> <span class="pl-kos">(</span><span class="pl-k">const</span> <span class="pl-s1">c</span> <span class="pl-k">of</span> <span class="pl-s1">input</span><span class="pl-kos">.</span><span class="pl-en">split</span><span class="pl-kos">(</span><span class="pl-s">''</span><span class="pl-kos">)</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-        <span class="pl-k">switch</span> <span class="pl-kos">(</span><span class="pl-s1">c</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
-    
-            <span class="pl-c">// parens</span>
-            <span class="pl-k">case</span> <span class="pl-s">'('</span>:
-            <span class="pl-k">case</span> <span class="pl-s">')'</span>:
-                <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inString</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">+=</span> <span class="pl-s1">c</span>
-                    <span class="pl-k">continue</span>
-                <span class="pl-kos">}</span>
-                <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">!=</span> <span class="pl-s">''</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-                    <span class="pl-s1">tokens</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span><span class="pl-c1">type</span>: <span class="pl-s">"string"</span><span class="pl-kos">,</span> <span class="pl-c1">val</span>: <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span><span class="pl-kos">}</span><span class="pl-kos">)</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">=</span> <span class="pl-s">''</span>
-                <span class="pl-kos">}</span>
-                <span class="pl-s1">tokens</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span><span class="pl-c1">type</span>: <span class="pl-s">"paren"</span><span class="pl-kos">,</span> <span class="pl-c1">val</span>: <span class="pl-s1">c</span><span class="pl-kos">}</span><span class="pl-kos">)</span>
-                <span class="pl-k">continue</span>
-    
-            <span class="pl-c">// escapes</span>
-            <span class="pl-k">case</span> <span class="pl-s">'\\'</span>:
-                <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inEscape</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">+=</span> <span class="pl-s1">c</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inEscape</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
-                <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inEscape</span> <span class="pl-c1">=</span> <span class="pl-c1">true</span>
-                <span class="pl-kos">}</span>
-                <span class="pl-k">continue</span>
-    
-            <span class="pl-c">// quotes</span>
-            <span class="pl-k">case</span> <span class="pl-s">'"'</span>:
-                <span class="pl-c">// escaped quote</span>
-                <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inEscape</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">+=</span> <span class="pl-s1">c</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inEscape</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
-                    <span class="pl-k">continue</span>
-                <span class="pl-kos">}</span>
-                <span class="pl-c">// end of string</span>
-                <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inString</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-                    <span class="pl-s1">tokens</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span><span class="pl-c1">type</span>: <span class="pl-s">"string"</span><span class="pl-kos">,</span> <span class="pl-c1">val</span>: <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span><span class="pl-kos">}</span><span class="pl-kos">)</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">=</span> <span class="pl-s">''</span>
-                <span class="pl-kos">}</span>
-                <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inString</span> <span class="pl-c1">=</span> <span class="pl-c1">!</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inString</span>
-                <span class="pl-k">continue</span>
-    
-            <span class="pl-c">// whitespace</span>
-            <span class="pl-k">case</span> <span class="pl-s">' '</span>:
-            <span class="pl-k">case</span> <span class="pl-s">'\n'</span>:
-            <span class="pl-k">case</span> <span class="pl-s">'\r'</span>:
-            <span class="pl-k">case</span> <span class="pl-s">'\t'</span>:
-                <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">inString</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">+=</span> <span class="pl-s1">c</span>
-                    <span class="pl-k">continue</span>
-                <span class="pl-kos">}</span>
-                <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">!=</span> <span class="pl-s">''</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
-                    <span class="pl-s1">tokens</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span><span class="pl-c1">type</span>: <span class="pl-s">"tag"</span><span class="pl-kos">,</span> <span class="pl-c1">val</span>: <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span><span class="pl-kos">}</span><span class="pl-kos">)</span>
-                    <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">=</span> <span class="pl-s">''</span>
-                <span class="pl-kos">}</span>
-                <span class="pl-k">continue</span>
-    
-            <span class="pl-c">// everything else</span>
-            <span class="pl-k">default</span>:
-                <span class="pl-s1">state</span><span class="pl-kos">.</span><span class="pl-c1">buf</span> <span class="pl-c1">+=</span> <span class="pl-s1">c</span>
-        <span class="pl-kos">}</span>
-    <span class="pl-kos">}</span></pre></div>
-    <p>we can see it stores our input in three types in tokens array <code>paren</code>,<code>tag</code>,<code>string</code></p>
+   <script src="https://gist.github.com/ma1f0y/ceddf138124ec2ff389a43504cd55ef0.js"></script>
+     <p>we can see it stores our input in three types in tokens array <code>paren</code>,<code>tag</code>,<code>string</code></p>
     <div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-s1">allowedTags</span> <span class="pl-c1">=</span> <span class="pl-kos">[</span><span class="pl-s">'h1'</span><span class="pl-kos">,</span> <span class="pl-s">'h2'</span><span class="pl-kos">,</span> <span class="pl-s">'h3'</span><span class="pl-kos">,</span> <span class="pl-s">'div'</span><span class="pl-kos">,</span> <span class="pl-s">'ul'</span><span class="pl-kos">,</span> <span class="pl-s">'ol'</span><span class="pl-kos">,</span> <span class="pl-s">'li'</span><span class="pl-kos">,</span> <span class="pl-s">'b'</span><span class="pl-kos">,</span> <span class="pl-s">'strong'</span><span class="pl-kos">,</span> <span class="pl-s">'em'</span><span class="pl-kos">,</span> <span class="pl-s">'br'</span><span class="pl-kos">,</span> <span class="pl-s">'p'</span><span class="pl-kos">]</span>
     <span class="pl-s1">tokens</span><span class="pl-kos">.</span><span class="pl-en">forEach</span><span class="pl-kos">(</span><span class="pl-s1">t</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
         <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">t</span><span class="pl-kos">.</span><span class="pl-c1">type</span> <span class="pl-c1">==</span> <span class="pl-s">"tag"</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-c1">!</span><span class="pl-s1">allowedTags</span><span class="pl-kos">.</span><span class="pl-en">includes</span><span class="pl-kos">(</span><span class="pl-s1">t</span><span class="pl-kos">.</span><span class="pl-c1">val</span><span class="pl-kos">)</span><span class="pl-kos">)</span><span class="pl-kos">{</span>
